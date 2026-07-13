@@ -10,6 +10,7 @@
 #include "arjan/posix/fstream.hpp"
 
 #include "catch2/catch.hpp"
+#include "include/arjan/posix/process.hpp"
 
 #include <iostream>
 #include <iterator>
@@ -22,15 +23,14 @@ extern const std::vector< std::string > current_environment;
 using arjan::posix::process::process;
 using arjan::posix::process::options;
 using arjan::posix::process::redirects;
+using arjan::posix::process::convertible_to_string;
 
-template < typename ...Args >
-auto process( const std::string &cmd, Args &&...args )
+auto process( const std::string &cmd, convertible_to_string auto &&...args )
 {
-	return process( arjan::posix::process::options{}, cmd, std::forward< Args >( args )... );
+	return process( arjan::posix::process::options{}, cmd, std::forward< decltype( args ) >( args )... );
 }
 
-template < typename ...Args >
-std::string process_to_string( std::string_view cmd, Args &&...args )
+std::string process_to_string( std::string_view cmd, convertible_to_string auto &&...args )
 {
 	options opts {
 		{
@@ -41,7 +41,7 @@ std::string process_to_string( std::string_view cmd, Args &&...args )
 	};
 	arjan::posix::ifstream stream{
 		arjan::posix::streambuf(
-			process( opts, cmd, std::forward< Args >( args )... ).cout
+			process( opts, cmd, std::forward< decltype( args ) >( args )... ).cout
 		)
 	};
 	return {

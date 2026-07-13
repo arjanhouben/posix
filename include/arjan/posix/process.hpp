@@ -24,6 +24,9 @@ namespace arjan {
 namespace posix {
 namespace process {
 
+template < typename T >
+concept convertible_to_string = requires( T t ) { std::string{ t }; };
+
 struct result_value
 {
 	inline result_value( int expected, std::future< int > &&f ) :
@@ -282,13 +285,13 @@ inline process::handle process( process::options options_, std::string cmd, std:
 	};
 }
 
-template < typename ...Args >
-process::handle process( process::options options_, std::string_view cmd, Args ...args )
+template < convertible_to_string ...Args >
+inline process::handle process( process::options options_, std::string_view cmd, Args ...args )
 {
-	return process( 
+	return process(
 		options_,
 		std::string{ cmd },
-		std::vector< std::string >{ ( std::string{ args }, ... ) } 
+		std::vector< std::string >{ std::string{ args }... }
 	);
 }
 

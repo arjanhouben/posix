@@ -1,14 +1,12 @@
-if( CMAKE_VERSION VERSION_LESS 3.21 )
-	if( NOT PROJECT_NAME )
-		set( PROJECT_IS_TOP_LEVEL TRUE )
-	endif()
-endif()
-
-cmake_policy( SET CMP0048 NEW )
+cmake_minimum_required( VERSION 3.20 )
 
 project( posix VERSION 1.0.0 )
 
-cmake_minimum_required( VERSION 3.19 )
+if( CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME )
+	set( PROJECT_IS_TOP_LEVEL TRUE )
+else()
+	set( PROJECT_IS_TOP_LEVEL FALSE )
+endif()
 
 include( FetchContent )
 
