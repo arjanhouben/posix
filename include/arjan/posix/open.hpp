@@ -28,12 +28,4 @@ inline file open( const std::string &path, int m, mode_t mode = 0644 )
 	return open( path.c_str(), m, mode );
 }
 
-inline void close( file f )
-{
-	if ( f.valid() )
-	{
-		::close( f.release() );
-	}
-}
-
 }}

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <array>
+#include <algorithm>
+#include <iterator>
 #include <future>
 #include <utility>
 #include <cstdlib>
@@ -26,7 +29,7 @@ struct result_value
 		expected_( expected ),
 		future_( std::move( f ) ),
 		value_( std::numeric_limits< int >::max() ) {}
-	
+
 	inline ~result_value() noexcept( false )
 	{
 		if ( future_.valid() )
@@ -40,11 +43,11 @@ struct result_value
 
 	result_value( result_value&& ) = default;
 
-	inline explicit operator bool() 
+	inline explicit operator bool()
 	{
 		return expected_ == value();
 	}
-	
+
 	inline bool finished() const noexcept
 	{
 		if ( future_.valid() )
@@ -53,12 +56,12 @@ struct result_value
 		}
 		return true;
 	}
-	
+
 	inline int expected() const noexcept
 	{
 		return expected_;
 	}
-	
+
 	inline int value()
 	{
 		if ( future_.valid() )
@@ -67,9 +70,9 @@ struct result_value
 		}
 		return value_;
 	}
-	
+
 	private:
-	
+
 		const int expected_;
 		std::future< int > future_;
 		int value_;
@@ -83,7 +86,9 @@ enum class signal
 	bus_error = SIGBUS,
 	child_stopped = SIGCHLD,
 	continue_ = SIGCONT,
+#ifdef SIGEMT
 	emulator_trap = SIGEMT,
+#endif
 	floating_point_exception = SIGFPE,
 	hangup = SIGHUP,
 	illegal_instruction = SIGILL,
@@ -139,12 +144,12 @@ enum class redirects
 
 struct options : std::array< redirects, 3 >
 {
-	redirects &cin = std::array< redirects, 3 >::operator[]( STDIN_FILENO ), 
-		&cout = std::array< redirects, 3 >::operator[]( STDOUT_FILENO ), 
+	redirects &cin = std::array< redirects, 3 >::operator[]( STDIN_FILENO ),
+		&cout = std::array< redirects, 3 >::operator[]( STDOUT_FILENO ),
 		&cerr = std::array< redirects, 3 >::operator[]( STDERR_FILENO );
 
 	std::vector< std::string > environment;
-	
+
 	int expected_return_code = 0;
 	bool throw_on_unexpected_return_code = true;
 };
@@ -159,7 +164,7 @@ struct unexpected_return_code : std::exception
 {
 	unexpected_return_code( int c ) noexcept :
 		code( c ) {}
-		
+
 	int code;
 	const char* what() const noexcept override
 	{
@@ -213,17 +218,17 @@ inline process::handle process( process::options options_, std::string cmd, std:
 				break;
 		}
 	}
-	
+
 	const auto pid = check_errno( fork );
 	if ( pid == 0 )
-	{	
+	{
 		for ( auto pipe_id : FILE_DESCRIPTORS )
 		{
 			if ( pipes[ pipe_id ] )
 			{
 				check_errno( ::close, static_cast< int >( pipe_id ) );
-				check_errno( 
-					dup2, 
+				check_errno(
+					dup2,
 					pipes[ pipe_id ][ get_direction( pipe_id ) ].get(),
 					static_cast< int >( pipe_id )
 				);
@@ -249,7 +254,7 @@ inline process::handle process( process::options options_, std::string cmd, std:
 		execve( cmd.c_str(), parameters.data(), environment.data() );
 		exit( -1 );
 	}
-	
+
 	constexpr auto get_status = []( int pid, options opt )
 	{
 		int status = 0;
@@ -263,12 +268,12 @@ inline process::handle process( process::options options_, std::string cmd, std:
 		}
 		return status;
 	};
-	
+
 	for ( auto pipe_id : FILE_DESCRIPTORS )
 	{
 		pipes[ pipe_id ][ get_direction( pipe_id ) ].reset();
 	}
-	
+
 	return {
 		pid,
 		{

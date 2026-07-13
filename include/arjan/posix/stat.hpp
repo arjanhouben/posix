@@ -4,6 +4,18 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 
+#include "arjan/posix/errno.hpp"
+
+#ifdef __linux__
+#define ST_TIMESPEC st_ctim
+#define ST_ATIMESPEC st_atim
+#define ST_MTIMESPEC st_mtim
+#else
+#define ST_TIMESPEC st_ctimespec
+#define ST_ATIMESPEC st_atimespec
+#define ST_MTIMESPEC st_mtimespec
+#endif
+
 namespace arjan {
 namespace posix {
 
@@ -29,9 +41,9 @@ struct stat_result
 		size_in_bytes( stat_.st_size ),
 		block_size( stat_.st_blksize ),
 		number_of_512B_blocks( stat_.st_blocks ),
-		last_status_change( to_timepoint< time_point >( stat_.st_ctimespec ) ),
-		last_access( to_timepoint< time_point >( stat_.st_atimespec ) ),
-		last_modified( to_timepoint< time_point >( stat_.st_mtimespec ) ),
+		last_status_change( to_timepoint< time_point >( stat_.ST_TIMESPEC ) ),
+		last_access( to_timepoint< time_point >( stat_.ST_ATIMESPEC ) ),
+		last_modified( to_timepoint< time_point >( stat_.ST_MTIMESPEC ) ),
 		errno_value( errno_value_ ) {}
 
 	enum class type

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "arjan/posix/file.hpp"
 
 namespace arjan {
@@ -17,7 +19,7 @@ struct pipe : std::array< posix::file, 2 >
 	{
 		return operator[]( input ) && operator[]( output );
 	}
-	
+
 	inline auto& open() noexcept
 	{
 		int descriptors[ 2 ] = { -1 };

@@ -13,8 +13,8 @@ struct basic_fstream : stream_base
 	basic_fstream( streambuf_type buf ) :
 		stream_base( &buffer_ ),
 		buffer_( std::move( buf ) ) {}
-	
-	private:
+
+	 private:
 		streambuf_type buffer_;
 };
 

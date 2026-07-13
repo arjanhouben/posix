@@ -1,6 +1,13 @@
 #pragma once
 
+#include <cerrno>
 #include <exception>
+
+#ifdef __linux__
+using errno_t = int;
+#else
+// errno_t is a built-in type on macOS / BSD
+#endif
 
 namespace arjan {
 namespace posix {
