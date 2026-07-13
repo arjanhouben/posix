@@ -84,7 +84,6 @@ struct basic_streambuf : std::basic_streambuf< char_type >
 	private:
 	
 		file file_;
-		fd_set set_;
 		std::array< char_type, buffer_size > buffer_;
 };
 

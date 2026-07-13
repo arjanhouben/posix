@@ -108,7 +108,7 @@ enum class signal
 	power_failure = SIGPWR,
 #endif
 	quit = SIGQUIT,
-	segmentation_faul = SIGSEGV,
+	segmentation_fault = SIGSEGV,
 	stop = SIGSTOP,
 	bad_system_call = SIGSYS,
 	termination = SIGTERM,
