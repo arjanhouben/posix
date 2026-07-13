@@ -54,6 +54,7 @@ if( PROJECT_IS_TOP_LEVEL )
 		tests.cpp
 		file.cpp
 		fstream.cpp
+		pipe.cpp
 		${CMAKE_CURRENT_BINARY_DIR}/test_main.cpp
 	)
 
