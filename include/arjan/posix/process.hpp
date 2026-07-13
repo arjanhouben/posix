@@ -14,6 +14,7 @@
 #include "arjan/posix/errno.hpp"
 #include "arjan/posix/file.hpp"
 #include "arjan/posix/pipe.hpp"
+#include "arjan/posix/open.hpp"
 
 namespace arjan {
 namespace posix {
@@ -205,8 +206,8 @@ inline process::handle process( process::options options_, std::string cmd, std:
 				pipes[ pipe_id ].open();
 				break;
 			case process::redirects::null:
-				pipes[ pipe_id ][ input ] = posix::file( "/dev/null", posix::file::mode::read );
-				pipes[ pipe_id ][ output ] = posix::file( "/dev/null", posix::file::mode::write );
+				pipes[ pipe_id ][ input ] = posix::open( "/dev/null", posix::open_mode::read );
+				pipes[ pipe_id ][ output ] = posix::open( "/dev/null", posix::open_mode::write );
 				break;
 			case process::redirects::parent:
 				break;
@@ -220,7 +221,7 @@ inline process::handle process( process::options options_, std::string cmd, std:
 		{
 			if ( pipes[ pipe_id ] )
 			{
-				check_errno( close, static_cast< int >( pipe_id ) );
+				check_errno( ::close, static_cast< int >( pipe_id ) );
 				check_errno( 
 					dup2, 
 					pipes[ pipe_id ][ get_direction( pipe_id ) ].get(),

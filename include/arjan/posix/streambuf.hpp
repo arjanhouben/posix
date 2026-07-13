@@ -1,12 +1,15 @@
 #pragma once
 
 #include <streambuf>
+#include <fcntl.h>
+#include <unistd.h>
 #include "arjan/posix/file.hpp"
+#include "arjan/posix/errno.hpp"
 
 namespace arjan {
 namespace posix {
 
-template < typename char_type = char, size_t buffer_size = 1 >
+template < typename char_type = char, size_t buffer_size = 64 >
 struct basic_streambuf : std::basic_streambuf< char_type >
 {
 	using base = std::basic_streambuf< char_type >;

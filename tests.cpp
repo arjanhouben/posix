@@ -1,6 +1,14 @@
-#include "catch2/catch.hpp"
+#include <fcntl.h>
+#include <filesystem>
+#include <string>
+#include <cstdlib>
+#include <cstdio>
+
 #include "arjan/posix/process.hpp"
+#include "arjan/posix/file.hpp"
 #include "arjan/posix/fstream.hpp"
+
+#include "catch2/catch.hpp"
 
 #include <iostream>
 #include <iterator>
@@ -31,7 +39,9 @@ std::string process_to_string( const std::string &cmd, Args &&...args )
 		}
 	};
 	arjan::posix::ifstream stream{
-		process( opts, cmd, std::forward< Args >( args )... ).cout
+		arjan::posix::streambuf(
+			process( opts, cmd, std::forward< Args >( args )... ).cout
+		)
 	};
 	return {
 		std::istreambuf_iterator< char >{ stream },
@@ -47,7 +57,7 @@ TEST_CASE( "run cmake command" )
 
 TEST_CASE( "run cmake command with incorrect argument" )
 {
-	REQUIRE_THROWS_AS( 
+	REQUIRE_THROWS_AS(
 		process_to_string( cmake_command, "this is incorrect" ),
 		arjan::posix::process::unexpected_return_code
 	);
@@ -74,11 +84,15 @@ TEST_CASE( "run cmake command and check input and output" )
 	auto p = process( opt, head_command, "-1" );
 	CHECK( p.cin != arjan::posix::file() );
 	const std::string test_data = "some_test_data";
-	arjan::posix::ofstream( std::move( p.cin ) ) << test_data << '\n';
+	arjan::posix::ofstream(
+		arjan::posix::streambuf{
+			std::move( p.cin )
+		}
+	) << test_data << '\n';
 	CHECK( p.cin == arjan::posix::file() );
 	CHECK_NOTHROW( p.result.value() );
 	std::string cout_output;
-	std::getline( arjan::posix::ifstream( std::move( p.cout ) ), cout_output );
+	std::getline( arjan::posix::ifstream( arjan::posix::streambuf( std::move( p.cout ) ) ), cout_output );
 	CHECK( cout_output == test_data );
 }
 
@@ -89,7 +103,7 @@ TEST_CASE( "run command with modified env" )
 	opts.cout = redirects::pipe;
 	opts.environment = { test_environment };
 	std::string result;
-	arjan::posix::ifstream stream( process( opts, env_command ).cout );
+	arjan::posix::ifstream stream( arjan::posix::streambuf( process( opts, env_command ).cout ) );
 	stream >> result;
 	CHECK( result == test_environment );
 }

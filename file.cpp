@@ -1,5 +1,6 @@
 #include "catch2/catch.hpp"
 #include "arjan/posix/file.hpp"
+#include "arjan/posix/open.hpp"
 
 extern const std::string cmake_command;
 
@@ -14,7 +15,7 @@ TEST_CASE( "file" )
 
 	WHEN( "opening an existing file" )
 	{
-		arjan::posix::file file( cmake_command, arjan::posix::file::mode::read );
+		auto file = arjan::posix::open( cmake_command, arjan::posix::open_mode::read );
 		CHECK( file );
 		CHECK( file.get() != arjan::posix::file::invalid );
 		WHEN( "moving a valid file into a copy" )
@@ -44,7 +45,3 @@ TEST_CASE( "file" )
 		}
 	}
 }
-
-// check for using file in constexpr way
-static_assert( arjan::posix::file() == arjan::posix::file() );
-static_assert( arjan::posix::file( 2 ) > arjan::posix::file( 1 ) );

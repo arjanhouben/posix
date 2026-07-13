@@ -2,10 +2,11 @@
 #include <fstream>
 #include "arjan/posix/fstream.hpp"
 #include "arjan/posix/stat.hpp"
+#include "arjan/posix/open.hpp"
 
 extern const std::string cmake_command;
 
-using mode = arjan::posix::file::mode;
+using open_mode = arjan::posix::open_mode;
 
 constexpr auto test_path = "/tmp/stream_test.txt";
 constexpr auto test_line = "this is a test";
@@ -16,24 +17,29 @@ TEST_CASE( "streams" )
 	{
 		CHECK_THROWS(
 			arjan::posix::ofstream(
-				arjan::posix::file{}
+				arjan::posix::streambuf(
+					arjan::posix::file{}
+				)
 			)
 		);
 	}
 	WHEN( "creating a file and write a string to it" )
 	{
 		{
-			arjan::posix::ofstream ofstream(
-				arjan::posix::file( test_path, mode::write | mode::create | mode::truncate )
-			);
-			ofstream << test_line;
+			arjan::posix::ofstream(
+				arjan::posix::streambuf(
+					arjan::posix::open( test_path, open_mode::write | open_mode::create | open_mode::truncate )
+				)
+			) << test_line;
 		}
 
 		CHECK( arjan::posix::stat( test_path ).exists() );
 		AND_WHEN( "we try to open the file and read the contents into a string" )
 		{
 			arjan::posix::ifstream ifstream(
-				arjan::posix::file( test_path, arjan::posix::file::mode::read )
+				arjan::posix::streambuf(
+					arjan::posix::open( test_path, arjan::posix::open_mode::read )
+				)
 			);
 			std::string line;
 			CHECK( std::getline( ifstream, line ) );
