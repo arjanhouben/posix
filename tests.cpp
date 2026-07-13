@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <cstdlib>
 #include <cstdio>
 
@@ -13,9 +14,9 @@
 #include <iostream>
 #include <iterator>
 
-extern const std::string cmake_command;
-extern const std::string head_command;
-extern const std::string env_command;
+extern const char* cmake_command;
+extern const char* head_command;
+extern const char* env_command;
 extern const std::vector< std::string > current_environment;
 
 using arjan::posix::process::process;
@@ -29,7 +30,7 @@ auto process( const std::string &cmd, Args &&...args )
 }
 
 template < typename ...Args >
-std::string process_to_string( const std::string &cmd, Args &&...args )
+std::string process_to_string( std::string_view cmd, Args &&...args )
 {
 	options opts {
 		{
@@ -70,7 +71,7 @@ TEST_CASE( "run cmake command with incorrect argument" )
 
 TEST_CASE( "run cmake command and check output" )
 {
-	const std::string test_data = "test_data";
+	const std::string_view test_data = "test_data";
 	const auto cout_output = process_to_string( cmake_command, "-E", "echo_append", test_data );
 	CHECK( cout_output == test_data );
 }
@@ -83,7 +84,7 @@ TEST_CASE( "run cmake command and check input and output" )
 	opt.cout = redirects::pipe;
 	auto p = process( opt, head_command, "-1" );
 	CHECK( p.cin != arjan::posix::file() );
-	const std::string test_data = "some_test_data";
+	const std::string_view test_data = "some_test_data";
 	arjan::posix::ofstream(
 		arjan::posix::streambuf{
 			std::move( p.cin )
@@ -98,10 +99,10 @@ TEST_CASE( "run cmake command and check input and output" )
 
 TEST_CASE( "run command with modified env" )
 {
-	const std::string test_environment = "my_variable=my_value";
+	const std::string_view test_environment = "my_variable=my_value";
 	options opts;
 	opts.cout = redirects::pipe;
-	opts.environment = { test_environment };
+	opts.environment = { std::string{ test_environment } };
 	std::string result;
 	arjan::posix::ifstream stream( arjan::posix::streambuf( process( opts, env_command ).cout ) );
 	stream >> result;

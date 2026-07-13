@@ -7,6 +7,7 @@
 #include <utility>
 #include <cstdlib>
 #include <vector>
+#include <string_view>
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -154,12 +155,6 @@ struct options : std::array< redirects, 3 >
 	bool throw_on_unexpected_return_code = true;
 };
 
-template < typename Container, typename F >
-void for_each( Container &c, F &&f )
-{
-	std::for_each( std::begin( c ), std::end( c ), std::forward< F >( f ) );
-}
-
 struct unexpected_return_code : std::exception
 {
 	unexpected_return_code( int c ) noexcept :
@@ -248,8 +243,8 @@ inline process::handle process( process::options options_, std::string cmd, std:
 				storage.push_back( &str[ 0 ] );
 			};
 		};
-		for_each( arguments, append_null_terminator( parameters ) );
-		for_each( options_.environment, append_null_terminator( environment ) );
+		std::for_each( std::begin( arguments ), std::end( arguments ), append_null_terminator( parameters ) );
+		std::for_each( std::begin( options_.environment ), std::end( options_.environment ), append_null_terminator( environment ) );
 		parameters.push_back( nullptr );
 		environment.push_back( nullptr );
 		execve( cmd.c_str(), parameters.data(), environment.data() );
@@ -288,9 +283,13 @@ inline process::handle process( process::options options_, std::string cmd, std:
 }
 
 template < typename ...Args >
-process::handle process( process::options options_, const std::string &cmd, Args ...args )
+process::handle process( process::options options_, std::string_view cmd, Args ...args )
 {
-	return process( options_, cmd, std::vector< std::string >{ args... } );
+	return process( 
+		options_,
+		std::string{ cmd },
+		std::vector< std::string >{ ( std::string{ args }, ... ) } 
+	);
 }
 
 }}}

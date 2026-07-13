@@ -4,7 +4,7 @@
 #include "arjan/posix/stat.hpp"
 #include "arjan/posix/open.hpp"
 
-extern const std::string cmake_command;
+extern const char* cmake_command;
 
 using open_mode = arjan::posix::open_mode;
 

@@ -3,9 +3,9 @@
 #include "arjan/posix/process.hpp"
 #include <string>
 
-std::string cmake_command = "@CMAKE_COMMAND@";
-std::string head_command = "@HEAD_COMMAND@";
-std::string env_command = "@ENV_COMMAND@";
+const char* cmake_command = "@CMAKE_COMMAND@";
+const char* head_command  = "@HEAD_COMMAND@";
+const char* env_command   = "@ENV_COMMAND@";
 std::vector< std::string > current_environment;
 
 int main( int argc, char* argv[], char *envp[] )

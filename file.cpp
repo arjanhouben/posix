@@ -2,7 +2,7 @@
 #include "arjan/posix/file.hpp"
 #include "arjan/posix/open.hpp"
 
-extern const std::string cmake_command;
+extern const char* cmake_command;
 
 TEST_CASE( "file" )
 {

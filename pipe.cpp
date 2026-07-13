@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <string_view>
 
 #include "catch2/catch.hpp"
 #include "arjan/posix/pipe.hpp"
@@ -32,12 +33,12 @@ TEST_CASE( "pipe" )
 
 		WHEN( "writing to the pipe and reading from it" )
 		{
-			const std::string test_data = "hello from pipe";
+			std::string_view test_data = "hello from pipe";
 			::write( p[ arjan::posix::pipe::output ].get(), test_data.data(), test_data.size() );
 			std::string buf( 256, 0 );
 			const ssize_t n = ::read( p[ arjan::posix::pipe::input ].get(), buf.data(), buf.size() );
 			CHECK( n > 0 );
-			CHECK( std::string( buf.data(), n ) == test_data );
+			CHECK( std::string_view( buf.data(), static_cast< std::string_view::size_type >( n ) ) == test_data );
 		}
 	}
 }
