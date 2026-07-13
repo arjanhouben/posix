@@ -1,6 +1,7 @@
 #pragma once
 
 #include <compare>
+#include <source_location>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -20,7 +21,7 @@ struct open_mode
 
 inline file open( const char *path, int m, mode_t mode = 0644 )
 {
-	return file( check_errno( ::open, path, m, mode ) );
+	return file( check_errno( std::source_location::current(), ::open, path, m, mode ) );
 }
 
 inline file open( const std::string &path, int m, mode_t mode = 0644 )

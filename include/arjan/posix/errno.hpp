@@ -2,6 +2,12 @@
 
 #include <cerrno>
 #include <exception>
+#include <format>
+#include <source_location>
+#include <string_view>
+#include <system_error>
+#include <cstring>
+#include <functional>
 
 #ifdef __linux__
 using errno_t = int;
@@ -12,13 +18,18 @@ using errno_t = int;
 namespace arjan {
 namespace posix {
 
-template < typename F, typename ...Args >
-auto check_errno( F &&f, Args &&...args )
+inline auto check_errno( std::source_location loc, auto&& f, auto&&...args )
 {
-	const auto result = f( std::forward< Args >( args )... );
+	const auto result = std::invoke( std::forward< decltype( f ) >( f ), std::forward< decltype( args ) >( args )... );
 	if ( result == -1 )
 	{
-		throw std::system_error( errno, std::system_category() );
+		const auto pos = std::string_view( loc.file_name() ).find_last_of( '/' );
+		const auto basename = ( pos == std::string_view::npos )
+			? std::string_view( loc.file_name() )
+			: std::string_view( loc.file_name() + pos + 1 );
+
+		throw std::system_error( errno, std::system_category(),
+			std::format( "{}:{}: {}", basename, loc.line(), std::strerror( errno ) ) );
 	}
 	return result;
 }

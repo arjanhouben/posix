@@ -26,8 +26,8 @@ struct basic_streambuf : std::basic_streambuf< char_type >
 			buffer_.data() + buffer_.size()
 		);
 
-		const auto flags = check_errno( fcntl, file_.get(), F_GETFL, 0 );
-		check_errno( fcntl, file_.get(), F_SETFL, flags | O_NONBLOCK );
+		const auto flags = check_errno( std::source_location::current(), fcntl, file_.get(), F_GETFL, 0 );
+		check_errno( std::source_location::current(), fcntl, file_.get(), F_SETFL, flags | O_NONBLOCK );
 	}
 
 	auto reset( posix::file &&fileno = file() ) noexcept

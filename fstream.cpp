@@ -1,5 +1,5 @@
 #include "catch2/catch.hpp"
-#include <fstream>
+
 #include "arjan/posix/fstream.hpp"
 #include "arjan/posix/stat.hpp"
 #include "arjan/posix/open.hpp"
@@ -25,6 +25,7 @@ TEST_CASE( "streams" )
 	}
 	WHEN( "creating a file and write a string to it" )
 	{
+		std::remove( test_path );
 		{
 			arjan::posix::ofstream(
 				arjan::posix::streambuf(
@@ -44,9 +45,10 @@ TEST_CASE( "streams" )
 			std::string line;
 			CHECK( std::getline( ifstream, line ) );
 			THEN( "the string should match the line we put in" )
-			{			
+			{
 				CHECK( line == test_line );
 			}
 		}
+		std::remove( test_path );
 	}
 }

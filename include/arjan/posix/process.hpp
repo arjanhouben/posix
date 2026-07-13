@@ -127,7 +127,7 @@ struct handle
 
 	void kill( signal s = signal::kill )
 	{
-		check_errno( ::kill, pid, static_cast< std::underlying_type_t< signal > >( s ) );
+		check_errno( std::source_location::current(), ::kill, pid, static_cast< std::underlying_type_t< signal > >( s ) );
 	}
 
 	const int pid;
@@ -219,15 +219,16 @@ inline process::handle process( process::options options_, std::string cmd, std:
 		}
 	}
 
-	const auto pid = check_errno( fork );
+	const auto pid = check_errno( std::source_location::current(), fork );
 	if ( pid == 0 )
 	{
 		for ( auto pipe_id : FILE_DESCRIPTORS )
 		{
 			if ( pipes[ pipe_id ] )
 			{
-				check_errno( ::close, static_cast< int >( pipe_id ) );
+				check_errno( std::source_location::current(), ::close, static_cast< int >( pipe_id ) );
 				check_errno(
+					std::source_location::current(),
 					dup2,
 					pipes[ pipe_id ][ get_direction( pipe_id ) ].get(),
 					static_cast< int >( pipe_id )
