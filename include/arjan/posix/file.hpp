@@ -26,7 +26,7 @@ struct file_base
 	constexpr inline file_base( file_base &&rhs ) noexcept :
 		no_( rhs.release() ) {}
 	
-	constexpr inline file_base& operator = ( file_base &&rhs ) noexcept
+	constexpr inline file_base& operator = ( file_base &&rhs ) noexcept( noexcept( Close{}( 0 ) ) )
 	{
 		reset( rhs.release() );
 		return *this;
@@ -61,7 +61,7 @@ struct file_base
 		return r;
 	}
 	
-		inline void reset( int no = invalid ) noexcept
+		inline void reset( int no = invalid ) noexcept( noexcept( Close{}( no_ ) ) )
 		{
 			if ( valid() )
 			{
