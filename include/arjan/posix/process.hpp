@@ -166,7 +166,9 @@ struct unexpected_return_code : std::exception
 	int code;
 	const char* what() const noexcept override
 	{
-		return "unexpected_return_code";
+		thread_local char msg[ 64 ];
+		std::snprintf( msg, sizeof( msg ), "unexpected_return_code: %d", code );
+		return msg;
 	}
 };
 
