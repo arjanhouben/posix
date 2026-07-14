@@ -9,7 +9,7 @@ namespace posix {
 template < typename T >
 struct default_close
 {
-	constexpr void operator()( T f ) const
+	constexpr void operator()( T f ) const noexcept
 	{
 		::close( f );
 	};

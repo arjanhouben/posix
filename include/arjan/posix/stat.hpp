@@ -20,7 +20,7 @@ namespace arjan {
 namespace posix {
 
 template < typename Target = std::chrono::steady_clock::time_point >
-Target to_timepoint( timespec ts )
+constexpr Target to_timepoint( timespec ts ) noexcept
 {
 	return Target{
 		std::chrono::nanoseconds( ts.tv_nsec ) + std::chrono::seconds( ts.tv_sec )
@@ -30,7 +30,7 @@ Target to_timepoint( timespec ts )
 template < typename time_point = std::chrono::steady_clock::time_point >
 struct stat_result
 {
-	stat_result( const struct stat &stat_, errno_t errno_value_ = 0 ) :
+	constexpr stat_result( const struct stat &stat_, errno_t errno_value_ = 0 ) noexcept :
 		id_of_device_containing_the_file( stat_.st_dev ),
 		inode_number( stat_.st_ino ),
 		type_and_mode( stat_.st_mode ),
@@ -58,7 +58,7 @@ struct stat_result
 		socket = S_IFSOCK
 	};
 
-	type file_type() const
+	constexpr type file_type() const noexcept
 	{
 		switch ( type_and_mode & S_IFMT )
 		{
@@ -81,7 +81,7 @@ struct stat_result
 		}
 	}
 
-	bool exists() const
+	constexpr bool exists() const noexcept
 	{
 		if ( errno_value )
 		{
@@ -111,11 +111,19 @@ struct stat_result
 	errno_t errno_value;
 };
 
-template < typename char_type = char, typename time_point = std::chrono::steady_clock::time_point >
-stat_result< time_point > stat( const char_type *path )
+template < typename time_point = std::chrono::steady_clock::time_point >
+stat_result< time_point > stat( const char *path )
 {
 	struct stat sb = {};
 	const auto check_value_of_errno = lstat( path, &sb ) == -1;
+	return stat_result< time_point >{ sb, check_value_of_errno ? errno : 0 };
+}
+
+template < typename time_point = std::chrono::steady_clock::time_point >
+stat_result< time_point > stat( int fd )
+{
+	struct stat sb = {};
+	const auto check_value_of_errno = fstat( fd, &sb ) == -1;
 	return stat_result< time_point >{ sb, check_value_of_errno ? errno : 0 };
 }
 
