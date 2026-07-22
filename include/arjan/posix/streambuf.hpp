@@ -39,10 +39,15 @@ struct basic_streambuf : std::basic_streambuf< char_type >
 	int_type underflow() override
 	{
 		const auto begin = buffer_.data();
-		const auto read = xsgetn( begin, static_cast< std::streamsize >( buffer_.size() ) );
-		if ( read > 0 )
+		const auto n = xsgetn( begin, static_cast< std::streamsize >( buffer_.size() ) );
+		if ( n > 0 )
 		{
-			base::setg( begin, begin, begin + read );
+			base::setg( begin, begin, begin + n );
+		}
+		else if ( n < 0 )
+		{
+			// EOF: clear the buffer so subsequent calls also return eof()
+			base::setg( begin, begin, begin );
 		}
 		if ( base::gptr() == base::egptr() )
 		{
@@ -53,10 +58,10 @@ struct basic_streambuf : std::basic_streambuf< char_type >
 
 	std::streamsize xsgetn( char_type* dst, std::streamsize count ) override
 	{
-		const auto n = ::read( file_.get(), dst, static_cast< size_t >( count ) );
-		if ( n == -1 )
+		const ssize_t n = ::read( file_.get(), dst, static_cast< size_t >( count ) );
+		if ( n <= 0 )
 		{
-			return 0;
+			return n == 0 ? -1 : 0;
 		}
 		return n;
 	}
@@ -69,6 +74,11 @@ struct basic_streambuf : std::basic_streambuf< char_type >
 			return 0;
 		}
 		return n;
+	}
+
+	int sync() noexcept override
+	{
+		return ::fsync( file_.get() );
 	}
 
 	int_type overflow( int_type inp = traits_type::eof() ) override
