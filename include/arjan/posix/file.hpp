@@ -20,7 +20,10 @@ struct file_base
 {	
 	static constexpr int invalid = -1;
 
-	constexpr inline explicit file_base( int no = invalid ) noexcept :
+	constexpr inline file_base() noexcept :
+		file_base( invalid ) {}
+
+	constexpr inline explicit file_base( int no ) noexcept :
 		no_( no ) {}
 	
 	constexpr inline file_base( file_base &&rhs ) noexcept :

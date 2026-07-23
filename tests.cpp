@@ -1,3 +1,4 @@
+#include <chrono>
 #include <filesystem>
 #include <string>
 #include <string_view>
@@ -8,6 +9,7 @@
 #include "arjan/posix/open.hpp"
 #include "arjan/posix/pipe.hpp"
 
+#include "arjan/posix/streambuf.hpp"
 #include "catch2/catch.hpp"
 
 #include <iterator>
@@ -49,7 +51,7 @@ std::string process_to_string( std::string_view cmd, convertible_to_string auto 
 
 TEST_CASE( "run cmake command" )
 {
-	CHECK( bool( process( cmake_command ) ) );
+	CHECK( bool( process( cmake_command ).result() ) );
 }
 
 TEST_CASE( "run cmake command with incorrect argument" )
@@ -60,7 +62,7 @@ TEST_CASE( "run cmake command with incorrect argument" )
 	);
 	options opts;
 	opts.throw_on_unexpected_return_code = false;
-	REQUIRE_FALSE( bool( process( opts, cmake_command, "this is incorrect" ) ) );
+	REQUIRE_FALSE( bool( process( opts, cmake_command, "this is incorrect" ).result() ) );
 }
 
 TEST_CASE( "run cmake command and check output" )
@@ -85,7 +87,7 @@ TEST_CASE( "run cmake command and check input and output" )
 		}
 	) << test_data << '\n';
 	CHECK( p.cin == arjan::posix::file() );
-	CHECK_NOTHROW( p.result.value() );
+	CHECK_NOTHROW( p.result().value() );
 	std::string cout_output;
 	std::getline( arjan::posix::ifstream( arjan::posix::streambuf( std::move( p.cout ) ) ), cout_output );
 	CHECK( cout_output == test_data );
@@ -108,10 +110,10 @@ TEST_CASE( "kill running process" )
 	options opts;
 	opts.throw_on_unexpected_return_code = false;
 	auto p = process( opts, head_command );
-	CHECK_FALSE( p.result.finished() );
+	CHECK_FALSE( p.result().finished() );
 	p.kill();
-	CHECK( p.result.value() != opts.expected_return_code );
-	CHECK( p.result.finished() );
+	CHECK( p.result().value() != opts.expected_return_code );
+	CHECK( p.result().finished() );
 }
 
 TEST_CASE( "streambuf EAGAIN returns EOF to the stream" )
@@ -196,6 +198,88 @@ TEST_CASE( "streambuf EOF on empty file" )
 	}
 }
 
+TEST_CASE( "streambuf poll times out on empty pipe" )
+{
+	GIVEN( "a pipe with no writer and no data" )
+	{
+		arjan::posix::pipe pipe;
+		pipe.open();
+		REQUIRE( pipe );
+
+		arjan::posix::streambuf sb{
+			std::move( pipe[ arjan::posix::pipe::input ] )
+		};
+		pipe[ arjan::posix::pipe::input ].reset();
+
+		WHEN( "polling with a short timeout" )
+		{
+			AND_THEN( "it returns timeout" )
+			{
+				CHECK( sb.poll( std::chrono::milliseconds( 50 ) ) ==
+					arjan::posix::streambuf::poll_result::timeout );
+			}
+		}
+	}
+}
+
+TEST_CASE( "streambuf poll returns data_available when data is written" )
+{
+	GIVEN( "a pipe with a writer still open" )
+	{
+		arjan::posix::pipe pipe;
+		pipe.open();
+		REQUIRE( pipe );
+
+		arjan::posix::streambuf sb{
+			std::move( pipe[ arjan::posix::pipe::input ] )
+		};
+		auto writer = std::move( pipe[ arjan::posix::pipe::output ] );
+
+		WHEN( "data is written to the other end" )
+		{
+			const std::string_view data = "hello";
+			REQUIRE( ::write( writer.get(), data.data(), data.size() ) > 0 );
+
+			AND_THEN( "poll returns data_available" )
+			{
+				CHECK( sb.poll( std::chrono::milliseconds( 500 ) ) ==
+					arjan::posix::streambuf::poll_result::data_available );
+			}
+		}
+
+		WHEN( "no data is written and we poll" )
+		{
+			AND_THEN( "it returns timeout" )
+			{
+				CHECK( sb.poll( std::chrono::milliseconds( 50 ) ) ==
+					arjan::posix::streambuf::poll_result::timeout );
+			}
+		}
+	}
+}
+
+TEST_CASE( "streambuf poll does not throw on EOF" )
+{
+	GIVEN( "a pipe where the writer is closed (EOF on read end)" )
+	{
+		arjan::posix::pipe pipe;
+		pipe.open();
+		REQUIRE( pipe );
+
+		arjan::posix::streambuf sb{
+			std::move( pipe[ arjan::posix::pipe::input ] )
+		};
+		pipe[ arjan::posix::pipe::input ].reset();
+
+		WHEN( "polling with the writer closed" )
+		{
+			auto writer = std::move( pipe[ arjan::posix::pipe::output ] );
+			writer.reset(); // close writer -> EOF on read end
+			CHECK_NOTHROW( sb.poll( std::chrono::milliseconds( 50 ) ) );
+		}
+	}
+}
+
 TEST_CASE( "streambuf reads content then hits EOF cleanly" )
 {
 	GIVEN( "a file containing \"hello world\"" )
@@ -240,9 +324,8 @@ TEST_CASE( "streambuf reads content then hits EOF cleanly" )
 					CHECK( result == "world" );
 				}
 
-				AND_WHEN( "reading once more after clearing the stream" )
+				AND_WHEN( "reading once more after clearing the result" )
 				{
-					is.clear();
 					result.clear();
 					is >> result;
 

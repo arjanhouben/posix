@@ -1,8 +1,10 @@
 #pragma once
 
+#include <chrono>
 #include <streambuf>
 #include <fcntl.h>
 #include <unistd.h>
+#include <poll.h>
 #include "arjan/posix/file.hpp"
 #include "arjan/posix/errno.hpp"
 
@@ -89,6 +91,35 @@ struct basic_streambuf : std::basic_streambuf< char_type >
 			return traits_type::to_int_type( c );
 		}
 		return traits_type::eof();
+	}
+
+	enum class poll_result
+	{
+		timeout,
+		data_available
+	};
+
+	poll_result poll( std::chrono::milliseconds wait_time )
+	{
+		while ( true )
+		{
+			struct ::pollfd pfd { file_.get(), POLLIN, 0 };
+			const int ret = ::poll( &pfd, 1, static_cast<int>(wait_time.count()) );
+			if ( ret == 0 )
+			{
+				return poll_result::timeout;
+			}
+			else if ( ret < 0 )
+			{
+				if ( errno == EINTR ) continue;
+				throw std::system_error(
+					errno,
+					std::system_category(),
+					std::strerror( errno )
+				);
+			}
+			return poll_result::data_available;
+		}
 	}
 	
 	private:
