@@ -29,7 +29,9 @@ concept convertible_to_string = requires( T t ) { std::string{ t }; };
 
 struct result_value
 {
-	inline result_value( int expected, std::future< int > &&f ) :
+	inline result_value() = default;
+
+	inline result_value( int expected, std::future< int > &&f ) noexcept :
 		expected_( expected ),
 		future_( std::move( f ) ),
 		value_( std::numeric_limits< int >::max() ) {}
@@ -77,10 +79,10 @@ struct result_value
 
 	private:
 
-		const int expected_;
-		std::future< int > future_;
-		int value_;
-		const int exception_count = std::uncaught_exceptions();
+		int expected_ = -1;
+		std::future< int > future_ = {};
+		int value_ = -1;
+		int exception_count = std::uncaught_exceptions();
 };
 
 enum class signal
@@ -124,19 +126,44 @@ enum class signal
 
 struct handle
 {
-	explicit operator bool()
+	handle() = default;
+
+	handle( int p, result_value r, posix::file c_in, posix::file c_out, posix::file c_err ) noexcept :
+		cin( std::move( c_in ) ),
+		cout( std::move( c_out ) ),
+		cerr( std::move( c_err ) ),
+		pid_( p ),
+		result_( std::move( r ) ) {}
+
+	void kill( signal s = signal::kill ) const
 	{
-		return static_cast< bool >( result );
+		if ( pid_ >= 0 )
+		{
+			check_errno( std::source_location::current(), ::kill, pid_, static_cast< std::underlying_type_t< signal > >( s ) );
+		}
 	}
 
-	void kill( signal s = signal::kill )
+	const result_value& result() const noexcept
 	{
-		check_errno( std::source_location::current(), ::kill, pid, static_cast< std::underlying_type_t< signal > >( s ) );
+		return result_;
 	}
 
-	const int pid;
-	result_value result;
+	result_value& result() noexcept
+	{
+		return result_;
+	}
+
+	int pid() const noexcept
+	{
+		return pid_;
+	}
+	
 	posix::file cin, cout, cerr;
+
+	private:
+
+		int pid_ = -1;
+		result_value result_;
 };
 
 enum class redirects
